@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagrama de Flujo - Control de Producción</title>
+  <style>
+    /* Estilos base minimalistas */
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      color: #333;
+      min-height: 100vh;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-size: 2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    /* Contenedor principal con scroll horizontal */
+    .contenedor-diagrama {
+      width: 100%;
+      overflow-x: auto;
+      background: white;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    /* Imagen de fondo con la imagen del diagrama */
+    #diagrama-fondo {
+      position: relative;
+      width: 1270px;
+      height: 700px;
+      background-image: url('Diagrama de Flujo.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      /* Fallback pattern si no carga la imagen */
+      background-color: #f8f9fa;
+    }
+    
+    /* Overlay semitransparente para mejorar la legibilidad */
+    #diagrama-fondo::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.1);
+      z-index: 0;
+    }
+    
+    /* Título del diagrama en el centro (oculto cuando hay imagen) */
+    #diagrama-fondo::after {
+      content: 'DIAGRAMA DE FLUJO - CONTROL DE PRODUCCIÓN';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 24px;
+      font-weight: bold;
+      color: rgba(44, 62, 80, 0.1);
+      text-align: center;
+      z-index: 0;
+      display: none; /* Oculto cuando hay imagen de fondo */
+    }
+    
+    /* Estilos para los bloques de progreso */
+    .bloque-progreso {
+      position: absolute;
+      width: 100px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 10;
+      transition: transform 0.2s ease;
+    }
+    
+    .bloque-progreso:hover {
+      transform: scale(1.05);
+    }
+    
+    /* Círculo de progreso */
+    .circulo-progreso {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: #f8f9fa;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      border: 2px solid rgba(255,255,255,0.8);
+    }
+    
+    /* Barra de progreso circular mejorada */
+    .circulo-progreso::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: conic-gradient(
+        var(--color-progress) 0%,
+        var(--color-progress) calc(var(--progress) * 1%),
+        #e9ecef calc(var(--progress) * 1%),
+        #e9ecef 100%
+      );
+      border-radius: 50%;
+      transition: all 0.3s ease;
+    }
+    
+    /* Centro blanco del círculo */
+    .circulo-progreso::after {
+      content: '';
+      position: absolute;
+      width: 38px;
+      height: 38px;
+      background-color: white;
+      border-radius: 50%;
+    }
+    
+    /* Icono y porcentaje */
+    .circulo-icono, .circulo-porcentaje {
+      position: relative;
+      z-index: 1;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .circulo-porcentaje {
+      display: none;
+      font-weight: bold;
+      font-size: 12px;
+    }
+    
+    /* Muestra el porcentaje al pasar el mouse */
+    .bloque-progreso:hover .circulo-icono {
+      display: none;
+    }
+    
+    .bloque-progreso:hover .circulo-porcentaje {
+      display: block;
+    }
+    
+    /* Controles de incremento/decremento mejorados */
+    .controles-progreso {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    
+    .btn-control {
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      font-size: 12px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: linear-gradient(145deg, #ffffff, #e6e6e6);
+      border: 2px solid #333;
+      border-radius: 6px;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    
+    .btn-control:hover {
+      background: linear-gradient(145deg, #f3f4f6, #d1d5db);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    }
+    
+    .btn-control:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+    }
+    
+    /* Tooltip para mostrar el nombre de la operación */
+    .bloque-progreso::before {
+      content: attr(data-nombre);
+      position: absolute;
+      bottom: -35px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      z-index: 20;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    
+    .bloque-progreso:hover::before {
+      opacity: 1;
+    }
+    
+    /* Botones de exportación mejorados */
+    .botones-exportar {
+      text-align: center;
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .botones-exportar button {
+      padding: 12px 24px;
+      background: linear-gradient(145deg, #4285F4, #3367D6);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      min-width: 200px;
+      box-shadow: 0 4px 15px rgba(66, 133, 244, 0.3);
+    }
+    
+    .botones-exportar button:hover {
+      background: linear-gradient(145deg, #3367D6, #2c5aa0);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(66, 133, 244, 0.4);
+    }
+    
+    /* Estadísticas generales */
+    .estadisticas {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+      min-width: 120px;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #2c3e50;
+    }
+    
+    .stat-label {
+      font-size: 0.9rem;
+      color: #7f8c8d;
+      margin-top: 5px;
+    }
+    
+    /* Indicador de carga de imagen */
+    .imagen-cargando {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #666;
+      font-style: italic;
+      z-index: 1;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+      
+      h1 {
+        font-size: 1.5rem;
+      }
+      
+      .botones-exportar {
+        flex-direction: column;
+        align-items: center;
+      }
+      
+      .estadisticas {
+        flex-direction: column;
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>🏭 Diagrama de Flujo - Control de Producción</h1>
+  
+  <!-- Información de la orden de producción -->
+  <div class="estadisticas">
+    <div class="stat-item">
+      <div class="stat-value" id="numero-orden">OP-2025-01-001</div>
+      <div class="stat-label">Número de Orden</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="cliente-orden">Cliente Ejemplo</div>
+      <div class="stat-label">Cliente</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="cantidad-orden">100</div>
+      <div class="stat-label">Cantidad (unidades)</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="fecha-entrega">--/--/----</div>
+      <div class="stat-label">Fecha Entrega</div>
+    </div>
+  </div>
+
+  <!-- Estadísticas generales -->
+  <div class="estadisticas">
+    <div class="stat-item">
+      <div class="stat-value" id="progreso-total">0%</div>
+      <div class="stat-label">Progreso Total</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="operaciones-completadas">0</div>
+      <div class="stat-label">Operaciones Completadas</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="operaciones-proceso">0</div>
+      <div class="stat-label">En Proceso</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" id="ultima-actualizacion">--:--</div>
+      <div class="stat-label">Última Actualización</div>
+    </div>
+  </div>
+  
+  <!-- Contenedor del diagrama con scroll horizontal -->
+  <div class="contenedor-diagrama">
+    <div id="diagrama-fondo">
+      <div class="imagen-cargando" id="imagen-cargando">Cargando diagrama...</div>
+      <!-- Los bloques de progreso se insertarán aquí dinámicamente -->
+    </div>
+  </div>
+  
+  <!-- Botones de exportación -->
+  <div class="botones-exportar">
+    <button onclick="exportarPDF()">📄 Exportar Estado (PDF)</button>
+    <button onclick="exportarHistorial()">📜 Exportar Historial (TXT)</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script>
+    // Datos iniciales del diagrama (ajustados para la nueva imagen)
+    const operaciones = [
+      {id: 'inicio', nombre: 'INICIO', icono: '🚦', x: 70-35, y: 325-50},
+      {id: 'compras', nombre: 'COMPRAS', icono: '🛒', x: 70+80, y: 550-50},
+      {id: 'materia_prima', nombre: 'Materia Prima', icono: '📦', x: 180-30, y: 400-20},
+      {id: 'serrucho', nombre: 'SERRUCHO', icono: '✂️', x: 360-10, y: 580-80},
+      {id: 'c_serr_g10', nombre: 'C.Serr. G10', icono: '✂️', x: 500-35, y: 580-85},
+      {id: 'c_serr_g20', nombre: 'C.Serr. G20', icono: '✂️', x: 600-25, y: 580-85},
+      {id: 'c_serr_g30', nombre: 'C.Serr. G30', icono: '✂️', x: 700, y: 580-85},
+      {id: 'c_serr_g40', nombre: 'C.Serr. G40', icono: '✂️', x: 800+10, y: 580-85},
+      {id: 'torneria_g10', nombre: 'Tornería G10', icono: '⚙️', x: 500-35, y: 460-85},
+      {id: 'torneria_g20', nombre: 'Tornería G20', icono: '⚙️', x: 600-25, y: 460-85},
+      {id: 'torneria_g30', nombre: 'Tornería G30', icono: '⚙️', x: 700, y: 460-85},
+      {id: 'torneria_g40', nombre: 'Tornería G40', icono: '⚙️', x: 800+10, y: 460-85},
+      {id: 'laser', nombre: 'LASER', icono: '💥', x: 390-40, y: 70+80},
+      {id: 'c_laser_g10', nombre: 'C.Laser G10', icono: '💥', x: 500-35, y: 170-18},
+      {id: 'c_laser_g20', nombre: 'C.Laser G20', icono: '💥', x: 600-20, y: 170-18},
+      {id: 'c_laser_g30', nombre: 'C.Laser G30', icono: '💥', x: 700-5, y: 170-18},
+      {id: 'c_laser_g40', nombre: 'C.Laser G40', icono: '💥', x: 800+5, y: 170-15},
+      {id: 'plegado_g10', nombre: 'Plegado G10', icono: '📏', x: 500-35, y: 230+35},
+      {id: 'plegado_g20', nombre: 'Plegado G20', icono: '📏', x: 600-20, y: 230+35},
+      {id: 'plegado_g30', nombre: 'Plegado G30', icono: '📏', x: 700-5, y: 230+35},
+      {id: 'plegado_g40', nombre: 'Plegado G40', icono: '📏', x: 800+5, y: 230+35},
+      {id: 'control_final', nombre: 'CONTROL FINAL', icono: '✅', x: 1050-70, y: 325-50}
+    ];
+
+    // Estado inicial
+    let progreso = {};
+    let historial = [];
+    
+    // Datos de la orden de producción (puedes modificar estos valores)
+    let ordenProduccion = {
+      numero: 'OP-' + new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0') + '-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0'),
+      cliente: 'Cliente Ejemplo S.A.',
+      producto: 'Producto Metalmecánico',
+      cantidad: 100,
+      fechaInicio: new Date().toLocaleDateString(),
+      fechaEntrega: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+      responsable: 'Supervisor de Producción',
+      turno: 'Turno Mañana'
+    };
+    
+    // Verificar si la imagen de fondo se carga correctamente
+    function verificarImagenFondo() {
+      const img = new Image();
+      img.onload = function() {
+        document.getElementById('imagen-cargando').style.display = 'none';
+        console.log('Imagen de fondo cargada correctamente');
+      };
+      img.onerror = function() {
+        document.getElementById('imagen-cargando').textContent = 'No se pudo cargar la imagen "Diagrama de Flujo.png"';
+        document.getElementById('diagrama-fondo').style.background = `
+          linear-gradient(45deg, #f8f9fa 25%, transparent 25%), 
+          linear-gradient(-45deg, #f8f9fa 25%, transparent 25%), 
+          linear-gradient(45deg, transparent 75%, #f8f9fa 75%), 
+          linear-gradient(-45deg, transparent 75%, #f8f9fa 75%)
+        `;
+        document.getElementById('diagrama-fondo').style.backgroundSize = '30px 30px';
+        document.getElementById('diagrama-fondo').style.backgroundPosition = '0 0, 0 15px, 15px -15px, -15px 0px';
+        console.log('Error al cargar la imagen, usando patrón de fallback');
+      };
+      img.src = 'Diagrama de Flujo.png';
+    }
+    
+    // Inicializar el estado
+    function inicializarEstado() {
+      operaciones.forEach(op => {
+        progreso[op.id] = progreso[op.id] || 0;
+      });
+      actualizarEstadisticas();
+      actualizarInfoOrden();
+      verificarImagenFondo();
+    }
+    
+    // Actualizar información de la orden en la interfaz
+    function actualizarInfoOrden() {
+      document.getElementById('numero-orden').textContent = ordenProduccion.numero;
+      document.getElementById('cliente-orden').textContent = ordenProduccion.cliente.split(' ')[0] + '...';
+      document.getElementById('cantidad-orden').textContent = ordenProduccion.cantidad;
+      document.getElementById('fecha-entrega').textContent = ordenProduccion.fechaEntrega;
+    }
+    
+    // Generar los bloques de progreso en el diagrama
+    function generarBloques() {
+      const diagrama = document.getElementById('diagrama-fondo');
+      
+      // Limpiar solo los bloques de progreso, mantener el indicador de carga
+      const bloquesExistentes = diagrama.querySelectorAll('.bloque-progreso');
+      bloquesExistentes.forEach(bloque => bloque.remove());
+      
+      operaciones.forEach(op => {
+        const bloque = document.createElement('div');
+        bloque.className = 'bloque-progreso';
+        bloque.id = `bloque_${op.id}`;
+        bloque.setAttribute('data-nombre', op.nombre);
+        
+        // Posicionar el bloque
+        bloque.style.left = `${op.x}px`;
+        bloque.style.top = `${op.y}px`;
+        
+        // Determinar color según progreso
+        const color = obtenerColorProgreso(progreso[op.id]);
+        
+        // HTML del bloque
+        bloque.innerHTML = `
+          <div class="circulo-progreso" 
+               style="--progress: ${progreso[op.id]}; --color-progress: ${color}">
+            <div class="circulo-icono">${op.icono}</div>
+            <div class="circulo-porcentaje">${progreso[op.id]}%</div>
+          </div>
+          <div class="controles-progreso">
+            <button class="btn-control" onclick="cambiarProgreso('${op.id}', 10)" title="Incrementar 10%">+</button>
+            <button class="btn-control" onclick="cambiarProgreso('${op.id}', -10)" title="Decrementar 10%">-</button>
+          </div>
+        `;
+        
+        diagrama.appendChild(bloque);
+      });
+    }
+    
+    // Obtener color según el progreso
+    function obtenerColorProgreso(valor) {
+      if (valor >= 100) return '#27AE60'; // Verde
+      if (valor >= 75) return '#2ECC71';  // Verde claro
+      if (valor >= 50) return '#F39C12';  // Naranja
+      if (valor >= 25) return '#E67E22';  // Naranja oscuro
+      return '#E74C3C'; // Rojo
+    }
+    
+    // Actualizar el progreso de una operación
+    function cambiarProgreso(id, cambio) {
+      const nuevoProgreso = Math.max(0, Math.min(100, progreso[id] + cambio));
+      if (nuevoProgreso !== progreso[id]) {
+        progreso[id] = nuevoProgreso;
+        actualizarBloque(id);
+        actualizarEstadisticas();
+        
+        // Registrar en el historial
+        const ahora = new Date();
+        historial.push({
+          fecha: ahora.toISOString(),
+          operacion: id,
+          progreso: progreso[id],
+          cambio: cambio
+        });
+      }
+    }
+    
+    // Actualizar la visualización de un bloque
+    function actualizarBloque(id) {
+      const bloque = document.getElementById(`bloque_${id}`);
+      if (!bloque) return;
+      
+      const color = obtenerColorProgreso(progreso[id]);
+      
+      const circulo = bloque.querySelector('.circulo-progreso');
+      circulo.style.setProperty('--progress', progreso[id]);
+      circulo.style.setProperty('--color-progress', color);
+      
+      const porcentaje = bloque.querySelector('.circulo-porcentaje');
+      if (porcentaje) {
+        porcentaje.textContent = `${progreso[id]}%`;
+      }
+    }
+    
+    // Actualizar estadísticas generales
+    function actualizarEstadisticas() {
+      const valores = Object.values(progreso);
+      const promedioTotal = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
+      const completadas = valores.filter(v => v >= 100).length;
+      const enProceso = valores.filter(v => v > 0 && v < 100).length;
+      
+      document.getElementById('progreso-total').textContent = `${promedioTotal}%`;
+      document.getElementById('operaciones-completadas').textContent = completadas;
+      document.getElementById('operaciones-proceso').textContent = enProceso;
+      document.getElementById('ultima-actualizacion').textContent = new Date().toLocaleTimeString();
+    }
+    
+    // Función para exportar a PDF (implementación real)
+    function exportarPDF() {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        // Configuración inicial
+        const ahora = new Date();
+        const fechaHora = ahora.toLocaleDateString() + ' - ' + ahora.toLocaleTimeString();
+        
+        // Título principal
+        doc.setFontSize(20);
+        doc.setFont(undefined, 'bold');
+        doc.text('REPORTE DE PRODUCCIÓN', 105, 20, { align: 'center' });
+        
+        // Línea divisoria
+        doc.setLineWidth(0.5);
+        doc.line(20, 25, 190, 25);
+        
+        // Fecha y hora del reporte
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'normal');
+        doc.text('Fecha y Hora del Reporte: ' + fechaHora, 20, 35);
+        
+        // Información de la orden de producción
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('DATOS DE LA ORDEN DE PRODUCCIÓN', 20, 50);
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        let yPos = 60;
+        
+        doc.text('Número de Orden:', 20, yPos);
+        doc.text(ordenProduccion.numero, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Cliente:', 20, yPos);
+        doc.text(ordenProduccion.cliente, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Producto:', 20, yPos);
+        doc.text(ordenProduccion.producto, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Cantidad:', 20, yPos);
+        doc.text(ordenProduccion.cantidad.toString() + ' unidades', 70, yPos);
+        yPos += 8;
+        
+        doc.text('Fecha de Inicio:', 20, yPos);
+        doc.text(ordenProduccion.fechaInicio, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Fecha de Entrega:', 20, yPos);
+        doc.text(ordenProduccion.fechaEntrega, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Responsable:', 20, yPos);
+        doc.text(ordenProduccion.responsable, 70, yPos);
+        yPos += 8;
+        
+        doc.text('Turno:', 20, yPos);
+        doc.text(ordenProduccion.turno, 70, yPos);
+        yPos += 15;
+        
+        // Estadísticas generales
+        const valores = Object.values(progreso);
+        const promedioTotal = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
+        const completadas = valores.filter(v => v >= 100).length;
+        const enProceso = valores.filter(v => v > 0 && v < 100).length;
+        const pendientes = valores.filter(v => v === 0).length;
+        
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('RESUMEN EJECUTIVO', 20, yPos);
+        yPos += 10;
+        
+        doc.setFontSize(11);
+        doc.setFont(undefined, 'normal');
+        doc.text('Progreso Total de Producción: ' + promedioTotal + '%', 20, yPos);
+        yPos += 8;
+        doc.text('Operaciones Completadas: ' + completadas + ' de ' + operaciones.length, 20, yPos);
+        yPos += 8;
+        doc.text('Operaciones en Proceso: ' + enProceso, 20, yPos);
+        yPos += 8;
+        doc.text('Operaciones Pendientes: ' + pendientes, 20, yPos);
+        yPos += 15;
+        
+        // Estado detallado de operaciones
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('ESTADO DETALLADO DE OPERACIONES', 20, yPos);
+        yPos += 10;
+        
+        // Encabezados de tabla
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'bold');
+        doc.text('OPERACIÓN', 20, yPos);
+        doc.text('PROGRESO', 120, yPos);
+        doc.text('ESTADO', 160, yPos);
+        yPos += 5;
+        
+        // Línea de encabezado
+        doc.line(20, yPos, 190, yPos);
+        yPos += 5;
+        
+        // Datos de operaciones
+        doc.setFont(undefined, 'normal');
+        operaciones.forEach((op, index) => {
+          if (yPos > 270) { // Nueva página si es necesario
+            doc.addPage();
+            yPos = 20;
+          }
+          
+          const progresoOp = progreso[op.id];
+          let estado = '';
+          let color = [0, 0, 0]; // Negro por defecto
+          
+          if (progresoOp >= 100) {
+            estado = 'COMPLETADA';
+            color = [0, 128, 0]; // Verde
+          } else if (progresoOp >= 50) {
+            estado = 'EN PROCESO';
+            color = [255, 165, 0]; // Naranja
+          } else if (progresoOp > 0) {
+            estado = 'INICIADA';
+            color = [255, 140, 0]; // Naranja oscuro
+          } else {
+            estado = 'PENDIENTE';
+            color = [255, 0, 0]; // Rojo
+          }
+          
+          doc.setTextColor(0, 0, 0);
+          doc.text(op.nombre, 20, yPos);
+          doc.text(progresoOp + '%', 120, yPos);
+          
+          doc.setTextColor(color[0], color[1], color[2]);
+          doc.text(estado, 160, yPos);
+          
+          yPos += 6;
+        });
+        
+        // Pie de página
+        doc.setTextColor(0, 0, 0);
+        doc.setFontSize(8);
+        doc.text('Reporte generado automáticamente por Sistema de Control de Producción', 105, 290, { align: 'center' });
+        
+        // Guardar el PDF
+        const nombreArchivo = `Reporte_Produccion_${ordenProduccion.numero}_${ahora.getFullYear()}${String(ahora.getMonth() + 1).padStart(2, '0')}${String(ahora.getDate()).padStart(2, '0')}.pdf`;
+        doc.save(nombreArchivo);
+        
+        // Registrar en el historial
+        historial.push({
+          fecha: ahora.toISOString(),
+          accion: 'exportacion_pdf',
+          estado: {...progreso},
+          orden: ordenProduccion.numero
+        });
+        
+        alert('PDF generado exitosamente: ' + nombreArchivo);
+        
+      } catch (error) {
+        console.error('Error al generar PDF:', error);
+        alert('Error al generar el PDF. Verifique que la librería jsPDF esté cargada correctamente.');
+      }
+    }
+    
+    // Función para exportar historial a TXT (mejorada)
+    function exportarHistorial() {
+      let contenido = `HISTORIAL DE PROGRESO - CONTROL DE PRODUCCIÓN\n`;
+      contenido += `Generado el: ${new Date().toLocaleString()}\n`;
+      contenido += `${'='.repeat(60)}\n\n`;
+      
+      // Estadísticas actuales
+      const valores = Object.values(progreso);
+      const promedioTotal = Math.round(valores.reduce((a, b) => a + b, 0) / valores.length);
+      contenido += `ESTADÍSTICAS ACTUALES:\n`;
+      contenido += `Progreso total: ${promedioTotal}%\n`;
+      contenido += `Operaciones completadas: ${valores.filter(v => v >= 100).length}\n`;
+      contenido += `Operaciones en proceso: ${valores.filter(v => v > 0 && v < 100).length}\n\n`;
+      
+      // Estado actual de todas las operaciones
+      contenido += `ESTADO ACTUAL DE OPERACIONES:\n`;
+      contenido += `${'-'.repeat(40)}\n`;
+      operaciones.forEach(op => {
+        contenido += `${op.nombre}: ${progreso[op.id]}%\n`;
+      });
+      contenido += `\n`;
+      
+      // Historial de cambios
+      contenido += `HISTORIAL DE CAMBIOS:\n`;
+      contenido += `${'-'.repeat(40)}\n`;
+      historial.forEach(item => {
+        const fecha = new Date(item.fecha).toLocaleString();
+        if (item.operacion) {
+          const op = operaciones.find(o => o.id === item.operacion);
+          const cambio = item.cambio > 0 ? `+${item.cambio}%` : `${item.cambio}%`;
+          contenido += `${fecha} - ${op?.nombre || item.operacion}: ${item.progreso}% (${cambio})\n`;
+        } else if (item.accion === 'exportacion_pdf') {
+          contenido += `${fecha} - EXPORTACIÓN PDF REALIZADA\n`;
+        }
+      });
+      
+      // Crear y descargar el archivo
+      const blob = new Blob([contenido], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `historial_produccion_${new Date().toISOString().slice(0,10)}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+    
+    // Inicializar la aplicación al cargar la página
+    window.onload = () => {
+      inicializarEstado();
+      generarBloques();
+    };
+    
+    // Actualizar estadísticas cada minuto
+    setInterval(actualizarEstadisticas, 60000);
+  </script>
+</body>
+</html>
